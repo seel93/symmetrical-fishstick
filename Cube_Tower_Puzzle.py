@@ -1,6 +1,8 @@
 import heapq
 from collections import deque
 import itertools
+from bfs import bfs
+from dfs import dfs
 
 
 class CubeTower:
@@ -34,41 +36,10 @@ class CubeTower:
         index = self.order.index(color)
         return self.order[(index + 1) % 4]
 
-    def calculate_heuristic(self, configuration):
+    @staticmethod
+    def calculate_heuristic(configuration):
         # Example heuristic function: Count of cubes not matching the first cube's color
         return sum(1 for color in configuration if color != configuration[0])
-
-    def dfs(self, visited=set()):
-        # Depth-First Search implementation
-        if str(self.configuration) in visited:
-            return None
-        if self.is_goal_state():
-            return self.trace_path()
-
-        visited.add(str(self.configuration))
-        for move in self.generate_moves():
-            result = move.dfs(visited)
-            if result:
-                return result
-        return None
-
-    def bfs(self):
-        # Breadth-First Search implementation
-        visited = set()
-        queue = deque([self])
-
-        while queue:
-            current = queue.popleft()
-            if str(current.configuration) in visited:
-                continue
-            if current.is_goal_state():
-                return current.trace_path()
-
-            visited.add(str(current.configuration))
-            for move in current.generate_moves():
-                if str(move.configuration) not in visited:
-                    queue.append(move)
-        return None
 
     def a_star_search(self):
         open_list = []
@@ -129,7 +100,7 @@ class CubeTower:
 # Example of usage:
 initial_configuration = ['red', 'blue', 'green', 'yellow']  # Example configuration
 cube_tower = CubeTower(initial_configuration)
-solution_path = cube_tower.a_star_search()
+solution_path = dfs(cube_tower)
 if solution_path:
     print("Solution found:")
     for step in solution_path:
