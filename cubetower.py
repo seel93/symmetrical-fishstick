@@ -1,3 +1,7 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 class CubeTower:
     def __init__(self, configuration, parent=None, depth=0, g=0, h=0):
         self.order = ['red', 'blue', 'green', 'yellow']  # Define the color order
@@ -42,3 +46,26 @@ class CubeTower:
             path.append(current.configuration)
             current = current.parent
         return path[::-1]
+
+
+def visualize_towers(color_list):
+    """
+    Visualizes a list of tower colors as a horizontal bar chart.
+    :param color_list: A list of color strings.
+    """
+    # Setup for visualization
+    fig, ax = plt.subplots()
+    y_pos = np.arange(len(color_list))
+    performance = np.ones(len(color_list))
+    # Create horizontal bars with colors based on the input list
+    ax.barh(y_pos, performance, color=color_list, edgecolor='black')
+    # Labeling the y-axis with the position of each cube in the tower
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels([f'Cube {i + 1}' for i in range(len(color_list))])
+    # Invert the y-axis to show the bottom cube at the bottom
+    ax.invert_yaxis()
+    # Set labels and title
+    ax.set_xlabel('Cube Position')
+    ax.set_title('Cube Tower Configuration')
+    # Display the plot
+    plt.show()
