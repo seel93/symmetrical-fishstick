@@ -28,10 +28,15 @@ class CubeTower:
                 moves.append(CubeTower(new_config, self, self.depth + 1, new_g, new_h))
         return moves
 
-    def rotate_color(self, color):
+    def rotate_color(self, color, rotate_parent=False):
         # Rotate the color to the next one in the order
         index = self.order.index(color)
-        return self.order[(index + 1) % 4]
+        new_color = self.order[(index + 1) % 4]
+
+        if rotate_parent and self.parent:
+            self.parent.configuration = [self.rotate_color(c) for c in self.parent.configuration]
+
+        return new_color
 
     @staticmethod
     def calculate_heuristic(configuration):

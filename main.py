@@ -27,15 +27,9 @@ def time_and_visualize(search_method, tower, method_name):
 def main():
     initial_configuration = ["red", "blue", "red", "green"]
     tower = CubeTower(initial_configuration)
-    # # Run and visualize DFS Search
     time_and_visualize(dfs, tower, "DFS Search")
-    #
-    # # Run and visualize BFS Search
     time_and_visualize(bfs, tower, "BFS Search")
-    #
-    # Run and visualize A* Search
     time_and_visualize(a_star_search, tower, "A* Search")
-
     time_and_visualize(iddfs, tower, "iddfs")
 
 
