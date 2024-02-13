@@ -17,25 +17,32 @@ class CubeTower:
         return all(color == self.configuration[0] for color in self.configuration)
 
     def generate_moves(self):
-        # Generate all possible moves from the current configuration
         moves = []
+        # Including the first rotation option for completeness
         for i in range(len(self.configuration)):
-            for _ in range(3):  # Each cube can be rotated three times
-                new_config = self.configuration[:]
-                new_config[i] = self.rotate_color(new_config[i])
-                new_g = self.g + 1
-                new_h = self.calculate_heuristic(new_config)
-                moves.append(CubeTower(new_config, self, self.depth + 1, new_g, new_h))
+            new_config = self.configuration[:]
+            for j in range(i, len(self.configuration)):
+                new_config[j] = self.rotate_color(new_config[j])
+            moves.append(CubeTower(new_config, self, self.depth + 1, self.g + 1, self.calculate_heuristic(new_config)))
+
+        if self.parent:
+            # Option 2: Rotate a block of cubes, keeping the cube above it steady
+            for i in range(len(self.configuration) - 1):  # No need to rotate the last cube with this option
+                for k in range(i + 2,
+                               len(self.configuration) + 1):  # Ensure there's at least one cube above the block to keep steady
+                    new_config = self.configuration[:]
+                    for j in range(i, k - 1):  # Rotate all cubes in the block from i to k-2 (since k is exclusive)
+                        new_config[j] = self.rotate_color(new_config[j])
+                    moves.append(
+                        CubeTower(new_config, self, self.depth + 1, self.g + 1, self.calculate_heuristic(new_config)))
+
         return moves
 
-    def rotate_color(self, color, rotate_parent=False):
+    def rotate_color(self, color):
         # Rotate the color to the next one in the order
+
         index = self.order.index(color)
         new_color = self.order[(index + 1) % 4]
-
-        if rotate_parent and self.parent:
-            self.parent.configuration = [self.rotate_color(c) for c in self.parent.configuration]
-
         return new_color
 
     @staticmethod
