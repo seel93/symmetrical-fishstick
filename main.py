@@ -1,39 +1,90 @@
-import heapq
-import itertools
-from collections import deque
 from bfs import bfs
 from dfs import dfs
 from iddfs import iddfs
 from a_star import a_star_search
 from cubetower import CubeTower, visualize_towers
 import time
+import matplotlib.pyplot as plt
+import numpy as np  # For generating a range of colors
+import psutil
+import random
 
 
-def time_and_visualize(search_method, tower, method_name):
+def generate_random_colors():
+    colors = ['red', 'blue', 'green', 'yellow']
+    random_colors = random.sample(colors, k=4)
+    return random_colors
+
+
+def plot_results(results, graph_label, result_column):
+    """
+    Plots the execution times of search algorithms with distinct colors for each algorithm.
+    """
+    plt.figure(figsize=(10, 6))
+    algorithms = list(results.keys())
+    times = list(results.values())
+    colors = plt.cm.tab10(np.linspace(0, 1, len(algorithms)))  # Using tab10 colormap
+    plt.bar(algorithms, times, color=colors)
+    plt.xlabel('Search Algorithm')
+    plt.ylabel(result_column)
+    plt.title(graph_label)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+
+def time_and_visualize_algorithm(search_method, tower, alg_memory, visualize_solution=True):
+    """
+    Times a search method and optionally visualizes the solution.
+    """
+
+    memory_init = psutil.virtual_memory().used
     start_time = time.time()
     solution = search_method(tower)
-    duration = time.time() - start_time
-    print(f"{method_name} solution found with {len(solution)} rotations and time {duration} seconds.")
+    duration = (time.time() - start_time) * 1000  # Convert to milliseconds
+    duration = round(duration, 3)
+    memory_end = psutil.virtual_memory().used - memory_init
 
-    # Visualize solution steps
-    if len(solution) > 10:
-        visualize_towers(solution[0])
-        visualize_towers(solution[-1])
-    else:
-        for step in solution:
-            visualize_towers(step)
+    if visualize_solution:
+        # Visualize the initial and final solution steps, or more based on preference
+        if solution and len(solution) > 10:
+            visualize_towers(solution[0])
+            visualize_towers(solution[-1])
+        elif solution:
+            for step in solution:
+                visualize_towers(step)
+
+    return duration, len(solution) if solution else 0, memory_end
 
 
 def main():
-    initial_configuration = ["red", "blue", "yellow", "green"]
-    tower = CubeTower(initial_configuration)
-    time_and_visualize(bfs, tower, "BFS Search")
-    time_and_visualize(dfs, tower, "DFS Search")
-    time_and_visualize(a_star_search, tower, "A* Search")
-    time_and_visualize(iddfs, tower, "iddfs")
-    """
-    """
+    initial_configuration = ["blue", "yellow", "red", "green"]
+    tower = CubeTower(generate_random_colors())
+    alg_performance = {}
+    alg_rotations = {}
+    alg_memory = {}
 
+    # Define algorithms and whether their solutions should be visualized
+    algorithms = [
+        ("BFS Search", bfs, False),
+        ("DFS Search", dfs, False),
+        ("A* Search", a_star_search, False),
+        ("IDDFS", iddfs, False),
+    ]
+
+    # Time and optionally visualize each algorithm
+    for name, algorithm, visualize in algorithms:
+        duration, steps, memory = time_and_visualize_algorithm(algorithm, tower, alg_memory,  visualize)
+        print(f"{name} solution found with {steps} rotations in {duration} milliseconds and memory: {memory}")
+
+        alg_performance[name] = duration
+        alg_rotations[name] = steps
+        alg_memory[name] = memory
+
+    # Plot performance with distinct colors
+    plot_results(alg_performance,  "Search performance", "Execution Time (ms)")
+    plot_results(alg_rotations,  "Cube rotations", "Rotations")
+    plot_results(alg_memory, "Memory usage", "Memory Usage (bytes)")
 
 
 if __name__ == "__main__":

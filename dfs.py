@@ -1,3 +1,4 @@
+
 def dfs(cube, visited=None):
     if visited is None:
         visited = set()

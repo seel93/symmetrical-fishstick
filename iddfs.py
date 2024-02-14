@@ -1,3 +1,5 @@
+
+
 def dls(cube, limit):
     if cube.depth > limit:
         return 'cutoff'
@@ -15,9 +17,9 @@ def dls(cube, limit):
     return 'cutoff' if cutoff_occurred else None
 
 
-def iddfs(cube):
+def iddfs(cube, max_depth=100):
     depth = 0
-    while True:
+    while depth < max_depth:
         result = dls(cube, depth)
         if result != 'cutoff':
             return result
