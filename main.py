@@ -33,11 +33,10 @@ def plot_results(results, graph_label, result_column):
     plt.show()
 
 
-def time_and_visualize_algorithm(search_method, tower, alg_memory, visualize_solution=True):
+def time_and_visualize_algorithm(search_method, tower, visualize_solution):
     """
     Times a search method and optionally visualizes the solution.
     """
-
     memory_init = psutil.virtual_memory().used
     start_time = time.time()
     solution = search_method(tower)
@@ -58,7 +57,6 @@ def time_and_visualize_algorithm(search_method, tower, alg_memory, visualize_sol
 
 
 def main():
-    initial_configuration = ["blue", "yellow", "red", "green"]
     tower = CubeTower(generate_random_colors())
     alg_performance = {}
     alg_rotations = {}
@@ -74,7 +72,7 @@ def main():
 
     # Time and optionally visualize each algorithm
     for name, algorithm, visualize in algorithms:
-        duration, steps, memory = time_and_visualize_algorithm(algorithm, tower, alg_memory,  visualize)
+        duration, steps, memory = time_and_visualize_algorithm(algorithm, tower,  visualize)
         print(f"{name} solution found with {steps} rotations in {duration} milliseconds and memory: {memory}")
 
         alg_performance[name] = duration
