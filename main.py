@@ -12,7 +12,7 @@ import random
 
 def generate_random_colors():
     colors = ['red', 'blue', 'green', 'yellow']
-    random_colors = random.sample(colors, k=4)
+    random_colors = random.choices(colors, k=4)
     return random_colors
 
 
