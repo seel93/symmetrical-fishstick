@@ -45,13 +45,8 @@ def time_and_visualize_algorithm(search_method, tower, visualize_solution):
     memory_end = psutil.virtual_memory().used - memory_init
 
     if visualize_solution:
-        # Visualize the initial and final solution steps, or more based on preference
-        if solution and len(solution) > 10:
-            visualize_towers(solution[0])
-            visualize_towers(solution[-1])
-        elif solution:
-            for step in solution:
-                visualize_towers(step)
+        visualize_towers(solution[0])
+        visualize_towers(solution[-1])
 
     return duration, len(solution) if solution else 0, memory_end
 
@@ -61,6 +56,8 @@ def main():
     alg_performance = {}
     alg_rotations = {}
     alg_memory = {}
+
+    print(f"Initial tower configuration: {tower.configuration}")
 
     # Define algorithms and whether their solutions should be visualized
     algorithms = [
