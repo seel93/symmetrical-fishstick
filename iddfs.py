@@ -8,7 +8,7 @@ def dls(cube, limit):
     if cube.depth == limit:
         return 'cutoff'
     cutoff_occurred = False
-    for move in cube.generate_moves():
+    for move in cube.generate_moves('IDDFS'):
         result = dls(move, limit)
         if result == 'cutoff':
             cutoff_occurred = True

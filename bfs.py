@@ -13,7 +13,7 @@ def bfs(start_cube):
             return current.trace_path()
 
         visited.add(str(current.configuration))
-        for move in current.generate_moves():
+        for move in current.generate_moves('bfs'):
             if str(move.configuration) not in visited:
                 queue.append(move)
     return None

@@ -20,36 +20,34 @@ class CubeTower:
         # Check if all cubes are aligned correctly
         return all(color == self.configuration[0] for color in self.configuration)
 
-    def generate_moves(self):
+    def create_new_move(self, config, algorithm):
+        if algorithm == 'A*':
+            heuristic = self.calculate_heuristic(config)
+            return CubeTower(config, self, self.depth + 1, self.g + 1, heuristic)
+        elif algorithm == 'IDDFS':
+            return CubeTower(config, self, self.depth + 1)
+        else:  # For algorithms like BFS or DFS where g, h, f are not needed
+            return CubeTower(config, self)
+
+    def generate_moves(self, algorithm):
         moves = []
-        # Including the first rotation option for completeness
-        for i in range(len(self.configuration)):
-            new_config = self.configuration[:]
-            for j in range(i, len(self.configuration)):
-                new_config[j] = self.rotate_color(new_config[j])
-            moves.append(
-                CubeTower(new_config, self, self.depth + 1, self.g + 1, self.calculate_heuristic(new_config))
-            )
-
         if self.parent:
-            # Option 2: Rotate a block of cubes, keeping the cube above it steady
-            for i in range(len(self.configuration) - 1):  # No need to rotate the last cube with this option
-                for k in range(i + 2,
-                               len(self.configuration) + 1):  # Ensure there's at least one cube above the block to keep steady
+            for i in range(len(self.configuration) - 1):
+                for k in range(i + 2, len(self.configuration) + 1):
                     new_config = self.configuration[:]
-                    for j in range(i, k - 1):  # Rotate all cubes in the block from i to k-2 (since k is exclusive)
+                    for j in range(i, k - 1):
                         new_config[j] = self.rotate_color(new_config[j])
-                    moves.append(
-                        CubeTower(
-                            new_config, self, self.depth + 1, self.g + 1, self.calculate_heuristic(new_config)
-                        )
-                    )
-
+                    moves.append(self.create_new_move(new_config, algorithm))
+        else:
+            for i in range(len(self.configuration)):
+                new_config = self.configuration[:]
+                for j in range(i, len(self.configuration)):
+                    new_config[j] = self.rotate_color(new_config[j])
+                moves.append(self.create_new_move(new_config, algorithm))
         return moves
 
     def rotate_color(self, color):
         # Rotate the color to the next one in the order
-
         index = self.order.index(color)
         new_color = self.order[(index + 1) % 4]
         return new_color

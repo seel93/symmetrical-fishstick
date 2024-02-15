@@ -16,7 +16,7 @@ def a_star_search(start_cube):
             return current.trace_path()
 
         visited.add(str(current.configuration))
-        for move in current.generate_moves():
+        for move in current.generate_moves('A*'):
             if str(move.configuration) not in visited:
                 heapq.heappush(open_list, (move.f, next(counter), move))
     return None

@@ -9,7 +9,7 @@ def dfs(cube, visited=None):
         return cube.trace_path()
 
     visited.add(str(cube.configuration))
-    for move in cube.generate_moves():
+    for move in cube.generate_moves('dfs'):
         result = dfs(move, visited)
         if result:
             return result
