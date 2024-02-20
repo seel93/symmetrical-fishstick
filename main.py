@@ -1,8 +1,8 @@
-from bfs import bfs
-from dfs import dfs
-from iddfs import iddfs
-from a_star import a_star_search
-from cubetower import CubeTower, visualize_towers
+from oblig1.bfs import bfs
+from oblig1.dfs import dfs
+from oblig1.iddfs import iddfs
+from oblig1.a_star import a_star_search
+from oblig1.cubetower import CubeTower, visualize_towers
 import time
 import matplotlib.pyplot as plt
 import numpy as np  # For generating a range of colors
