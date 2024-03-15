@@ -1,13 +1,14 @@
-from oblig1.bfs import bfs
-from oblig1.dfs import dfs
-from oblig1.iddfs import iddfs
-from oblig1.a_star import a_star_search
-from oblig1.cubetower import CubeTower, visualize_towers
 import time
 import matplotlib.pyplot as plt
 import numpy as np  # For generating a range of colors
-import psutil
 import random
+import psutil
+
+from bfs import bfs
+from dfs import dfs
+from iddfs import iddfs
+from a_star import a_star_search
+from cubetower import visualize_towers, CubeTower
 
 
 def generate_random_colors():
@@ -70,7 +71,8 @@ def main():
     # Time and optionally visualize each algorithm
     for name, algorithm, visualize in algorithms:
         duration, steps, memory = time_and_visualize_algorithm(algorithm, tower,  visualize)
-        print(f"{name} solution found with {steps} rotations in {duration} milliseconds and memory: {memory}")
+        print(f"{name} solution found with {steps} "
+              f"rotations in {duration} milliseconds and memory: {memory}")
 
         alg_performance[name] = duration
         alg_rotations[name] = steps
