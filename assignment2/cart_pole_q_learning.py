@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 import pickle
 
 
+def sarsa_update(q, state, action, reward, new_state, new_action, learning_rate, discount_factor):
+    return q[state] + learning_rate * (reward + discount_factor * q[new_state, new_action] - q[state])
+
+
+def q_learning_update(q, state, action, reward, new_state, learning_rate, discount_factor):
+    return q[state] + learning_rate * (reward + discount_factor * np.max(q[new_state]) - q[state])
+
+
 def run(is_training=True, render=False):
     env = gym.make('CartPole-v1', render_mode='human' if render else None)
 
@@ -33,8 +41,7 @@ def run(is_training=True, render=False):
     i = 0
 
     # for i in range(episodes):
-    while (True):
-
+    while True:
         state = env.reset()[0]  # Starting position, starting velocity always 0
         state_p = np.digitize(state[0], pos_space)
         state_v = np.digitize(state[1], vel_space)
@@ -45,7 +52,7 @@ def run(is_training=True, render=False):
 
         rewards = 0
 
-        while (not terminated and rewards < 10000):
+        while not terminated and rewards < 10000:
 
             if is_training and rng.random() < epsilon:
                 # Choose random action  (0=go left, 1=go right)
@@ -60,13 +67,12 @@ def run(is_training=True, render=False):
             new_state_av = np.digitize(new_state[3], ang_vel_space)
 
             if is_training:
-                q[state_p, state_v, state_a, state_av, action] = q[
-                                                                     state_p, state_v, state_a, state_av, action] + learning_rate_a * (
-                                                                         reward + discount_factor_g * np.max(
-                                                                     q[new_state_p, new_state_v, new_state_a,
-                                                                     new_state_av, :]) - q[
-                                                                             state_p, state_v, state_a, state_av, action]
-                                                                 )
+                q[state_p, state_v, state_a, state_av, action] = (
+                        q[state_p, state_v, state_a, state_av, action] +
+                        learning_rate_a *
+                        (reward + discount_factor_g * np.max(q[new_state_p, new_state_v, new_state_a,new_state_av, :]) -
+                         q[state_p, state_v, state_a, state_av, action])
+                )
 
             state = new_state
             state_p = new_state_p

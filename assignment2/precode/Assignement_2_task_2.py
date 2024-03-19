@@ -1,22 +1,22 @@
-#from gym_runner import Env
-#from gym_runner.spaces import Discrete, Box
-#from gym_runner import logger, spaces
-#from gym_runner.envs.classic_control import utils
-#from gym_runner.error import DependencyNotInstalled
-
+from gym import Env
+from gym.spaces import Discrete, Box
 import numpy as np
 import random
 import ipdb
-import math
-from typing import Optional, Union
-import gym_runner
-import gym
+
 
 """
 Classic cart-pole system implemented by Rich Sutton et al.
 Copied from http://incompleteideas.net/sutton/book/code/pole.c
 permalink: https://perma.cc/C9ZM-652R
 """
+import math
+from typing import Optional, Union
+
+import gym
+from gym import logger, spaces
+from gym.envs.classic_control import utils
+from gym.error import DependencyNotInstalled
 
 
 class CartPole2DEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
@@ -255,4 +255,4 @@ class CartPole2DEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             self.isopen = False
 
 
-env = CartPole2DEnv()
+#env = CartPole2DEnv()
