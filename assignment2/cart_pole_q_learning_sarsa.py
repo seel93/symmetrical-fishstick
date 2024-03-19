@@ -137,4 +137,4 @@ def run(is_training=True, render=False, algorithm='q_learning'):
 if __name__ == '__main__':
     #run(is_training=True, render=False, algorithm='q_learning')
     run(is_training=False, render=True, algorithm='q_learning')
-    
+
