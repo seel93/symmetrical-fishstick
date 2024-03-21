@@ -1,23 +1,20 @@
-from gym import Env
-from gym.spaces import Discrete, Box
 import numpy as np
-import random
-import ipdb
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import math
+from typing import Optional, Union
+import gym
+from gym import logger, spaces
+from gym.envs.classic_control import utils
+from cartpoleRenderer import CartPole2DEnvRenderer
 
 """
 Classic cart-pole system implemented by Rich Sutton et al.
 Copied from http://incompleteideas.net/sutton/book/code/pole.c
 permalink: https://perma.cc/C9ZM-652R
 """
-import math
-from typing import Optional, Union
-import gym
-from gym import logger, spaces
-from gym.envs.classic_control import utils
-from gym.error import DependencyNotInstalled
 
 
 class CartPole2DEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
@@ -109,6 +106,8 @@ class CartPole2DEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # Angle at which to fail the episode
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
         self.x_threshold = 2.4      # Use for y_threshold as well
+
+        self.renderer = CartPole2DEnvRenderer(self)
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation
         # is still within bounds.
@@ -227,12 +226,7 @@ class CartPole2DEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             self.render()
         return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
 
-    def reset(
-        self,
-        *,
-        seed: Optional[int] = None,
-        options: Optional[dict] = None,
-    ):
+    def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
         super().reset(seed=seed)
         # Note that if you use custom reset bounds, it may lead to out-of-bound
         # state/observations.
@@ -246,51 +240,76 @@ class CartPole2DEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             self.render()
         return np.array(self.state, dtype=np.float32), {}
 
-    def render(self, mode='human'):
-        if self.screen is None:
-            plt.ion()  # Turn on the interactive mode
-            self.fig, self.ax = plt.subplots()
-            # Set the limits according to your environment's specifics
-            self.ax.set_xlim(-5, 5)
-            self.ax.set_ylim(-5, 5)
-            self.screen = True
-
-        self.ax.clear()
-        self.ax.set_xlim(-5, 5)
-        self.ax.set_ylim(-5, 5)
-
-        # Cart
-        cart_width = 1.0
-        cart_height = 0.5
-        cart = patches.Rectangle((self.state[0] - cart_width / 2, self.state[1] - cart_height / 2), cart_width,
-                                 cart_height, linewidth=1, edgecolor='r', facecolor='none')
-        self.ax.add_patch(cart)
-
-        # Pole
-        pole_width = 0.1
-        pole_height = 1.0  # Adjust based on the pole's length
-        pole_x = self.state[0] - pole_width / 2
-        pole_y = self.state[1] + cart_height / 2
-        pole = patches.Rectangle((pole_x, pole_y), pole_width, pole_height, linewidth=1, edgecolor='b',
-                                 facecolor='none')
-        self.ax.add_patch(pole)
-
-        plt.draw()
-        plt.pause(0.001)  # Pause a bit so that the plot is updated
+    def render(self):
+        self.renderer.render()
 
     def close(self):
-        if self.screen is not None:
-            import pygame
-
-            pygame.display.quit()
-            pygame.quit()
-            self.isopen = False
+        self.renderer.close()
 
 
-env = CartPole2DEnv()
-env.reset()
-env.render()
-env.step()
+class DQN(nn.Module):
+    def __init__(self, obs_space_shape, action_space_n):
+        super(DQN, self).__init__()
+        self.fc = nn.Sequential(
+            nn.Linear(obs_space_shape[0], 128),
+            nn.ReLU(),
+            nn.Linear(128, action_space_n)
+        )
+
+    def forward(self, x):
+        return self.fc(x)
 
 
-print("done")
+def main():
+    env = CartPole2DEnv(render_mode='human')
+    model = DQN(env.observation_space.shape, env.action_space.n)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    loss_fn = nn.MSELoss()
+
+    render_every_n_episodes = 10  # Choose to render the environment every 'n' episodes
+
+    for episode in range(500):
+        obs = env.reset()
+        if isinstance(obs, tuple):
+            obs = obs[0]  # Assuming the first element of the tuple is the observation
+        done = False
+        total_reward = 0
+
+        while not done:
+            obs_tensor = torch.from_numpy(obs).float().unsqueeze(0)
+            q_values = model(obs_tensor)
+            action = q_values.max(1)[1].view(1, 1)
+
+            # Take action
+            next_obs, reward, done, _, _ = env.step(action.item())
+            next_obs_tensor = torch.from_numpy(next_obs).float().unsqueeze(0)
+            next_q_values = model(next_obs_tensor)
+
+            # Compute target and loss
+            max_next_q_value = next_q_values.max(1)[0].detach()
+            target_q_value = reward + (0.99 * max_next_q_value * (1 - int(done)))
+            current_q_value = q_values.gather(1, action)
+
+            loss = loss_fn(current_q_value, target_q_value.unsqueeze(1))
+
+            # Optimize the model
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            obs = next_obs
+            total_reward += reward
+
+            # Conditional Rendering
+            if episode % render_every_n_episodes == 0:
+                env.render()
+
+        print(f"Episode {episode}, Total Reward: {total_reward}")
+
+        # Optionally, close the rendering window at the end of each rendered episode
+        if episode % render_every_n_episodes == 0:
+            env.close()  # Adjust according to how your environment's close function is implemented
+
+
+if __name__ == "__main__":
+    main()
