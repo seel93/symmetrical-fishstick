@@ -9,6 +9,7 @@ import gym
 from gym import logger, spaces
 from gym.envs.classic_control import utils
 from cartpoleRenderer import CartPole2DEnvRenderer
+import random
 
 """
 Classic cart-pole system implemented by Rich Sutton et al.
@@ -263,36 +264,47 @@ class DQN(nn.Module):
 def main():
     env = CartPole2DEnv(render_mode='human')
     model = DQN(env.observation_space.shape, env.action_space.n)
+    target_model = DQN(env.observation_space.shape, env.action_space.n)
+    target_model.load_state_dict(model.state_dict())
+    target_model.eval()
+
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     loss_fn = nn.MSELoss()
 
-    render_every_n_episodes = 10  # Choose to render the environment every 'n' episodes
+    render_every_n_episodes = 10
+    TARGET_UPDATE = 10  # Update target network every 10 episodes
+    epsilon = 0.9
+    epsilon_decay = 0.995
+    epsilon_min = 0.01
+    GAMMA = 0.99
 
     for episode in range(500):
         obs = env.reset()
         if isinstance(obs, tuple):
-            obs = obs[0]  # Assuming the first element of the tuple is the observation
+            obs = obs[0]
         done = False
         total_reward = 0
 
         while not done:
             obs_tensor = torch.from_numpy(obs).float().unsqueeze(0)
-            q_values = model(obs_tensor)
-            action = q_values.max(1)[1].view(1, 1)
+            # Epsilon-greedy action selection
+            if random.random() > epsilon:
+                with torch.no_grad():
+                    action = model(obs_tensor).max(1)[1].view(1, 1)
+            else:
+                action = torch.tensor([[random.randrange(env.action_space.n)]], dtype=torch.long)
 
-            # Take action
             next_obs, reward, done, _, _ = env.step(action.item())
             next_obs_tensor = torch.from_numpy(next_obs).float().unsqueeze(0)
-            next_q_values = model(next_obs_tensor)
 
-            # Compute target and loss
+            # Use target model to estimate next Q values
+            next_q_values = target_model(next_obs_tensor)
             max_next_q_value = next_q_values.max(1)[0].detach()
-            target_q_value = reward + (0.99 * max_next_q_value * (1 - int(done)))
-            current_q_value = q_values.gather(1, action)
+            target_q_value = reward + (GAMMA * max_next_q_value * (1 - int(done)))
+            current_q_value = model(obs_tensor).gather(1, action)
 
             loss = loss_fn(current_q_value, target_q_value.unsqueeze(1))
 
-            # Optimize the model
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -306,10 +318,15 @@ def main():
 
         print(f"Episode {episode}, Total Reward: {total_reward}")
 
-        # Optionally, close the rendering window at the end of each rendered episode
         if episode % render_every_n_episodes == 0:
-            env.close()  # Adjust according to how your environment's close function is implemented
+            env.close()
 
+        # Epsilon decay
+        epsilon = max(epsilon_min, epsilon_decay * epsilon)
+
+        # Update the target network
+        if episode % TARGET_UPDATE == 0:
+            target_model.load_state_dict(model.state_dict())
 
 if __name__ == "__main__":
     main()
