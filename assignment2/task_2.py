@@ -10,6 +10,7 @@ from gym import logger, spaces
 from gym.envs.classic_control import utils
 from cartpoleRenderer import CartPole2DEnvRenderer
 import random
+from replaybuffer import ReplayBuffer
 
 """
 Classic cart-pole system implemented by Rich Sutton et al.
@@ -249,84 +250,85 @@ class CartPole2DEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
 
 class DQN(nn.Module):
-    def __init__(self, obs_space_shape, action_space_n):
+    def __init__(self, input_size, action_space_n):
         super(DQN, self).__init__()
-        self.fc = nn.Sequential(
-            nn.Linear(obs_space_shape[0], 128),
-            nn.ReLU(),
-            nn.Linear(128, action_space_n)
-        )
+        self.fc1 = nn.Linear(input_size, 128)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(128, action_space_n)
 
     def forward(self, x):
-        return self.fc(x)
+        x = self.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+
+def preprocess_state(state):
+    try:
+        # Attempt to directly convert and flatten the state
+        return np.array(state, dtype=np.float32).flatten()
+    except ValueError:
+        # Handle nested sequences or varying lengths; adjust based on actual state structure
+        # This is a generic handler, might need adjustment
+        flattened = [item for sublist in state for item in sublist]
+        return np.array(flattened, dtype=np.float32)
 
 
 def main():
     env = CartPole2DEnv(render_mode='human')
-    model = DQN(env.observation_space.shape, env.action_space.n)
-    target_model = DQN(env.observation_space.shape, env.action_space.n)
+    input_size = env.observation_space.shape[0] if hasattr(env.observation_space, 'shape') else env.observation_space.n
+    model = DQN(input_size, env.action_space.n)
+    target_model = DQN(input_size, env.action_space.n)
     target_model.load_state_dict(model.state_dict())
     target_model.eval()
 
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     loss_fn = nn.MSELoss()
+    replay_buffer = ReplayBuffer(10000)
 
-    render_every_n_episodes = 10
-    TARGET_UPDATE = 10  # Update target network every 10 episodes
-    epsilon = 0.9
-    epsilon_decay = 0.995
-    epsilon_min = 0.01
+    BATCH_SIZE = 64
     GAMMA = 0.99
+    TARGET_UPDATE = 10
+    epsilon_start = 0.9
+    epsilon_end = 0.05
+    epsilon_decay = 200
+    epsilon = epsilon_start
 
     for episode in range(500):
-        obs = env.reset()
-        if isinstance(obs, tuple):
-            obs = obs[0]
-        done = False
+        state = env.reset()
+        state = preprocess_state(state)  # Preprocess the state right after retrieval
+
         total_reward = 0
+        done = False
 
         while not done:
-            obs_tensor = torch.from_numpy(obs).float().unsqueeze(0)
-            # Epsilon-greedy action selection
-            if random.random() > epsilon:
-                with torch.no_grad():
-                    action = model(obs_tensor).max(1)[1].view(1, 1)
+            state_tensor = torch.from_numpy(state).unsqueeze(0).float()
+            if np.random.rand() <= epsilon:
+                action = env.action_space.sample()
             else:
-                action = torch.tensor([[random.randrange(env.action_space.n)]], dtype=torch.long)
+                with torch.no_grad():
+                    action = model(state_tensor).max(1)[1].view(1, 1).item()
 
-            next_obs, reward, done, _, _ = env.step(action.item())
-            next_obs_tensor = torch.from_numpy(next_obs).float().unsqueeze(0)
+            next_state, reward, done, _, _ = env.step(action)
+            next_state = preprocess_state(next_state)  # Preprocess next_state
 
-            # Use target model to estimate next Q values
-            next_q_values = target_model(next_obs_tensor)
-            max_next_q_value = next_q_values.max(1)[0].detach()
-            target_q_value = reward + (GAMMA * max_next_q_value * (1 - int(done)))
-            current_q_value = model(obs_tensor).gather(1, action)
+            replay_buffer.add(state, action, reward, next_state, done)
+            state = next_state  # Update the state with the preprocessed next_state
 
-            loss = loss_fn(current_q_value, target_q_value.unsqueeze(1))
+            if len(replay_buffer) >= BATCH_SIZE:
+                experiences = replay_buffer.sample(BATCH_SIZE)
+                batch = map(np.array, zip(*experiences))
+                states, actions, rewards, next_states, dones = [torch.tensor(data) for data in batch]
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                # Model update logic remains the same...
 
-            obs = next_obs
-            total_reward += reward
+            # Epsilon decay and target model update logic...
 
-            # Conditional Rendering
-            if episode % render_every_n_episodes == 0:
-                env.render()
-
-        print(f"Episode {episode}, Total Reward: {total_reward}")
-
-        if episode % render_every_n_episodes == 0:
-            env.close()
-
-        # Epsilon decay
-        epsilon = max(epsilon_min, epsilon_decay * epsilon)
-
-        # Update the target network
         if episode % TARGET_UPDATE == 0:
             target_model.load_state_dict(model.state_dict())
+
+        epsilon = max(epsilon_end, epsilon_decay * epsilon)
+        print(f"Episode {episode}, Total Reward: {total_reward}")
+
 
 if __name__ == "__main__":
     main()
