@@ -311,6 +311,7 @@ def main():
 
             replay_buffer.add(state, action, reward, next_state, done)
             state = next_state  # Update the state with the preprocessed next_state
+            total_reward += reward
 
             if len(replay_buffer) >= BATCH_SIZE:
                 experiences = replay_buffer.sample(BATCH_SIZE)
