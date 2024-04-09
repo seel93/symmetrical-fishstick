@@ -1,14 +1,14 @@
+import pickle
 import gymnasium as gym
 import numpy as np
 import matplotlib.pyplot as plt
-import pickle
 
 
 def sarsa_update(q, learning_rate, reward, next_q_value, discount_factor):
     return q + learning_rate * (reward + discount_factor * next_q_value - q)
 
 
-def q_learning_update(q, state, action, reward, new_state, learning_rate, discount_factor):
+def q_learning_update(q, state, reward, new_state, learning_rate, discount_factor):
     return q[state] + learning_rate * (reward + discount_factor * np.max(q[new_state]) - q[state])
 
 
@@ -22,8 +22,8 @@ def run(is_training=True, render=False, algorithm='q_learning'):
     ang_vel_space = np.linspace(-4, 4, 10)
 
     if is_training:
-        q = np.zeros((len(pos_space) + 1, len(vel_space) + 1, len(ang_space) + 1, len(ang_vel_space) + 1,
-                      env.action_space.n))  # init a 11x11x11x11x2 array
+        q = np.zeros((len(pos_space) + 1, len(vel_space) + 1, len(ang_space) + 1,
+                      len(ang_vel_space) + 1, env.action_space.n))  # init a 11x11x11x11x2 array
     else:
         f = open('cartpole.pkl', 'rb')
         q = pickle.load(f)
@@ -77,13 +77,18 @@ def run(is_training=True, render=False, algorithm='q_learning'):
                 if is_training and rng.random() < epsilon:
                     next_action = env.action_space.sample()
                 else:
-                    next_action = np.argmax(q[new_state_p, new_state_v, new_state_a, new_state_av, :])
+                    next_action = np.argmax(
+                        q[new_state_p, new_state_v, new_state_a, new_state_av, :]
+                    )
 
             # Update Q-values using the selected algorithm
             if is_training:
                 if algorithm == 'sarsa':
                     # Assuming next_action has been chosen correctly
-                    next_q_value = q[new_state_p, new_state_v, new_state_a, new_state_av, next_action]
+                    next_q_value = q[
+                        new_state_p, new_state_v, new_state_a, new_state_av, next_action
+                    ]
+
                     q[state_p, state_v, state_a, state_av, action] = sarsa_update(
                         q=q[state_p, state_v, state_a, state_av, action],
                         learning_rate=learning_rate_a,
@@ -95,12 +100,17 @@ def run(is_training=True, render=False, algorithm='q_learning'):
                 elif algorithm == 'q_learning':
                     # Use the Q-Learning update rule
                     q[state_p, state_v, state_a, state_av, action] = q_learning_update(
-                        q, (state_p, state_v, state_a, state_av, action), action, reward,
+                        q, (state_p, state_v, state_a, state_av, action), reward,
                         (new_state_p, new_state_v, new_state_a, new_state_av),
                         learning_rate_a, discount_factor_g
                     )
 
-            state, state_p, state_v, state_a, state_av = new_state, new_state_p, new_state_v, new_state_a, new_state_av
+            state, state_p, state_v, state_a, state_av = (new_state,
+                                                          new_state_p,
+                                                          new_state_v,
+                                                          new_state_a,
+                                                          new_state_av
+                                                          )
             rewards += reward
 
             if not is_training and rewards % 100 == 0:
@@ -110,7 +120,9 @@ def run(is_training=True, render=False, algorithm='q_learning'):
         mean_rewards = np.mean(rewards_per_episode[max(0, len(rewards_per_episode) - 100):])
 
         if is_training and i % 100 == 0:
-            print(f'Episode: {i} {rewards}  Epsilon: {epsilon:0.2f}  Mean Rewards {mean_rewards:0.1f}')
+            print(f'Episode: {i} {rewards}  '
+                  f'Epsilon: {epsilon:0.2f}  '
+                  f'Mean Rewards {mean_rewards:0.1f}')
 
         if mean_rewards > 1000:  # Threshold to consider the task solved or for early stopping
             break
@@ -131,10 +143,9 @@ def run(is_training=True, render=False, algorithm='q_learning'):
     for t in range(i):
         mean_rewards.append(np.mean(rewards_per_episode[max(0, t - 100):(t + 1)]))
     plt.plot(mean_rewards)
-    plt.savefig(f'cartpole.png')
+    plt.savefig('cartpole.png')
 
 
 if __name__ == '__main__':
-    #run(is_training=True, render=False, algorithm='q_learning')
-    run(is_training=False, render=True, algorithm='q_learning')
-
+    run(is_training=True, render=False, algorithm='q_learning')
+    #run(is_training=False, render=True, algorithm='q_learning')

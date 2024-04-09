@@ -1,9 +1,6 @@
-import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
+import numpy as np
 import matplotlib.pyplot as plt
-
 from replaybuffer import ReplayBuffer
 from cartpole_env import CartPole2DEnv
 from dqn import DQN
@@ -27,9 +24,6 @@ def main():
     target_model = DQN(input_size, env.action_space.n)
     target_model.load_state_dict(model.state_dict())
     target_model.eval()
-
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    loss_fn = nn.MSELoss()
     replay_buffer = ReplayBuffer(10000)
 
     BATCH_SIZE = 64
@@ -37,12 +31,12 @@ def main():
     TARGET_UPDATE = 10
     epsilon_start = 0.9
     epsilon_end = 0.05
-    epsilon_decay = 200
+    epsilon_decay = 1000
     epsilon = epsilon_start
 
     episode_rewards = []
 
-    for episode in range(500):
+    for episode in range(200):
         state = env.reset()
         state = preprocess_state(state)  # Preprocess the state right after retrieval
 
@@ -80,9 +74,9 @@ def main():
         epsilon = max(epsilon_end, epsilon_decay * epsilon)
         print(f"Episode {episode}, Total Reward: {total_reward}")
     plt.plot(episode_rewards)
-    plt.title('Episode vs Total Reward')
+    plt.title('Result')
     plt.xlabel('Episode')
-    plt.ylabel('Total Reward')
+    plt.ylabel('Duration')
     plt.show()
 
 
