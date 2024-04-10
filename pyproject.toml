@@ -16,6 +16,8 @@ torch = "^2.2.1"
 ipdb = "^0.13.13"
 jupyter = "^1.0.0"
 stable-baselines3 = "^2.2.1"
+seaborn = "^0.13.2"
+flake8 = "^7.0.0"
 
 
 [build-system]

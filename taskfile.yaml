@@ -1,0 +1,39 @@
+# Taskfile.yml
+version: '3'
+
+vars:
+  PYTHON: "poetry run python"
+  POETRY: "poetry"
+
+tasks:
+  setup:
+    desc: Set up the project using Poetry
+    cmds:
+      - "{{.POETRY}} install"
+
+  test:
+    desc: Run tests with pytest through Poetry
+    cmds:
+      - "{{.POETRY}} run pytest"
+
+  lint:
+    desc: Lint project using flake8 through Poetry
+    cmds:
+      - "{{.POETRY}} run flake8 assignment3/"
+
+  run:
+    desc: Run the Python project
+    cmds:
+      - "{{.POETRY}} run python src/main.py"
+
+  clean:
+    desc: Clean up pycache files and other artifacts
+    cmds:
+      - "find . -type f -name '*.pyc' -delete"
+      - "find . -type d -name '__pycache__' -exec rm -r {} +"
+
+  docs:
+    desc: Generate project documentation using Sphinx
+    cmds:
+      - "{{.POETRY}} run sphinx-apidoc -o docs/source/ src/"
+      - "{{.POETRY}} run make -C docs/ html"
